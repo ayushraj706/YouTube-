@@ -1,37 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        /* FULL VIEW CSS: Video ko edge-to-edge karne ke liye */
-        video, .video-stream, .html5-main-video {
+        /* 1. ULTRA FULL SCREEN CSS (CUSTOM) */
+        /* Video ko screen ke hisaab se stretch karne ya fit karne ka option */
+        .custom-full-view video {
             width: 100vw !important;
             height: 100vh !important;
-            object-fit: cover !important; /* Screen poora bhar dega */
+            object-fit: cover !important; /* Ye video ko poora faila dega (Zoom style) */
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
+            z-index: 99999 !important;
+            background: #000 !important;
         }
 
-        /* Agresive Ad-blocking */
-        ytm-promoted-video-renderer, ytm-display-ad-renderer, .ad-container, .ad-div, ytm-companion-ad-renderer { 
+        /* 2. AGGRESSIVE AD-BLOCKING (Brave Style) */
+        /* Sponsored videos, Banners, aur Breaking News shelves ko gaayab karo */
+        ytm-promoted-video-renderer, 
+        ytm-display-ad-renderer, 
+        ytm-ad-slot, 
+        .ad-container, 
+        .ad-div, 
+        ytm-companion-ad-renderer,
+        ytm-promoted-sparkles-web-renderer,
+        ytm-statement-banner-renderer,
+        .ytp-ad-overlay-container { 
             display: none !important; 
+            visibility: hidden !important;
+        }
+
+        /* 3. CLEAN UI */
+        /* फालतू के buttons हटाना ताकि App जैसा लगे */
+        .mobile-dot-menu, .topbar-icons {
+            /* display: none !important; */ /* Agar aapko search bar chahiye toh ise comment rehne dein */
         }
     </style>
 </head>
-<body style="background: #000; margin: 0;">
+<body style="background: #000; margin: 0; overflow-x: hidden;">
     <script>
-        // BRAVE TECHNIQUE: Background Media Session
-        const initMediaSession = () => {
+        // --- BRAVE BACKGROUND TECHNIQUE ---
+        const setupMediaSession = () => {
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.playbackState = 'playing';
-                navigator.mediaSession.setActionHandler('pause', () => { document.querySelector('video').play(); });
+                
+                // Notification bar mein controls dikhane ke liye
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: 'YouTube Pro',
+                    artist: 'Ayush Raj',
+                    album: 'Background Play Active'
+                });
+
+                const playVideo = () => document.querySelector('video')?.play();
+                
+                navigator.mediaSession.setActionHandler('play', playVideo);
+                navigator.mediaSession.setActionHandler('pause', playVideo); // Pause karne par bhi play hoga
             }
         };
 
-        // PRE-LOAD LOGIC: Shorts aur Subscriptions ko background mein khichna
+        // --- PRE-LOAD / PRE-WARM LOGIC ---
         window.preWarmYouTube = () => {
-            const sections = ['/shorts', '/feed/subscriptions', '/feed/library'];
-            sections.forEach(path => {
+            const paths = ['/', '/shorts', '/feed/subscriptions', '/feed/library'];
+            paths.forEach(path => {
                 const link = document.createElement('link');
                 link.rel = 'prefetch';
                 link.href = path;
@@ -39,29 +71,41 @@
             });
         };
 
+        // --- MAIN CONTROLLER (Ads, Background, Fullscreen) ---
         setInterval(() => {
             const video = document.querySelector('video');
+            
             if (video) {
-                // Background play loop
+                // Background play logic
                 if (document.hidden && video.paused && !video.ended) {
                     video.play();
                 }
-                initMediaSession();
+                setupMediaSession();
 
-                // Auto-skip ads (Fast forward technique)
+                // Custom Full Screen Fix (Force Zoom)
+                // Agar aapko 'Zoom to Fill' chahiye toh niche wali line use karein
+                document.body.classList.add('custom-full-view');
+
+                // Ad skip logic (Brave Fast-Forward Technique)
                 if (document.querySelector('.ad-showing')) {
-                    video.currentTime = video.duration;
+                    video.currentTime = video.duration; // Ad khatam karo
+                    video.playbackRate = 16; // 16 guna fast chalao
+                } else {
+                    video.playbackRate = 1; // Normal speed
                 }
             }
             
-            // Skip buttons click
-            const skip = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');
-            if(skip) skip.click();
-        }, 1000);
+            // Skip buttons automatically click karo
+            const skipBtns = ['.ytp-ad-skip-button', '.ytp-ad-skip-button-modern', '.ytp-ad-overlay-close-button'];
+            skipBtns.forEach(s => document.querySelector(s)?.click());
 
-        // Visibility Bypass
+        }, 500); // Har aadhe second mein check karega
+
+        // Visibility Bypass (YouTube ko dhoka dena)
         Object.defineProperty(document, 'visibilityState', {get: () => 'visible'});
         Object.defineProperty(document, 'hidden', {get: () => false});
+
+        window.onload = window.preWarmYouTube;
     </script>
 </body>
 </html>
