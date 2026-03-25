@@ -25,15 +25,15 @@ public class MainActivity extends BridgeActivity {
         WebView webView = this.bridge.getWebView();
         WebSettings s = webView.getSettings();
         
-        // Background & High Performance settings
+        // Background Music ke liye zaroori settings
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
-        s.setMediaPlaybackRequiresUserGesture(false); 
+        s.setMediaPlaybackRequiresUserGesture(false); // Brave Style: Bina touch ke play
         s.setDatabaseEnabled(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
         webView.setWebViewClient(new WebViewClient() {
-            // BRAVE STYLE: Network level ad blocking
+            // Brave Style: Network level par Ads block karna
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
@@ -46,8 +46,8 @@ public class MainActivity extends BridgeActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                // Pre-loading trigger
-                view.evaluateJavascript("javascript:preWarmYouTube();", null);
+                // Har page par background script chalu karna
+                view.evaluateJavascript("javascript:initBackgroundPlay();", null);
             }
 
             @Override
@@ -95,10 +95,13 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    public void onPause() { // FIXED: Was protected, now public
+    public void onPause() { // Ab ye Public hai, error nahi aayega
         super.onPause();
         if (this.bridge != null && this.bridge.getWebView() != null) {
+            // Brave Trick: Android ko WebView 'Pause' karne se rokna
             this.bridge.getWebView().resumeTimers();
+            // Android ko dhoka dena ki app abhi bhi active hai
+            this.bridge.getWebView().evaluateJavascript("javascript:window.dispatchEvent(new Event('focus'));", null);
         }
     }
 }
