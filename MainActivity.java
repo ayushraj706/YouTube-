@@ -1,21 +1,23 @@
 package com.ayush.ytpro;
+
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+    
     @Override
-    protected void onPause() {
+    public void onPause() { // Yahan 'public' hona zaroori hai
         super.onPause();
         if (this.bridge != null && this.bridge.getWebView() != null) {
             this.bridge.getWebView().resumeTimers();
         }
     }
+
     @Override
-    protected void onStop() {
+    public void onStop() { // Yahan bhi 'public' kar diya
         super.onStop();
         if (this.bridge != null && this.bridge.getWebView() != null) {
             this.bridge.getWebView().resumeTimers();
         }
     }
 }
-
