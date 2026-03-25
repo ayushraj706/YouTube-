@@ -1,16 +1,28 @@
 <!DOCTYPE html>
 <html>
-<body style="background: #000;">
+<head>
+    <style>
+        /* sponsored aur ads ko puri tarah khatam karo */
+        ytm-promoted-video-renderer, ytm-display-ad-renderer, .ad-container, .ad-div { 
+            display: none !important; 
+        }
+    </style>
+</head>
+<body style="background: #000; margin: 0;">
     <script>
-        // Ad-blocker aur Skip logic
+        // Force Video Play in Background
         setInterval(() => {
-            const ads = document.querySelectorAll('.ad-container, .ad-div, .video-ads, .ytp-ad-module, .ytp-ad-overlay-container');
-            ads.forEach(ad => ad.style.display = 'none');
-            const skipBtn = document.querySelector('.ytp-ad-skip-button-modern');
-            if(skipBtn) skipBtn.click();
+            const video = document.querySelector('video');
+            if (video && video.paused && !video.ended && document.hidden) {
+                video.play(); // Agar app piche jaye toh khud 'Play' dabao
+            }
+            
+            // Skip Ads
+            const skip = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');
+            if(skip) skip.click();
         }, 1000);
 
-        // Visibility Hack for Background Play
+        // Fake Visibility for YouTube
         Object.defineProperty(document, 'visibilityState', {get: () => 'visible'});
         Object.defineProperty(document, 'hidden', {get: () => false});
     </script>
