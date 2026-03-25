@@ -2,27 +2,64 @@
 <html>
 <head>
     <style>
-        /* sponsored aur ads ko puri tarah khatam karo */
-        ytm-promoted-video-renderer, ytm-display-ad-renderer, .ad-container, .ad-div { 
+        /* FULL VIEW CSS: Video ko edge-to-edge karne ke liye */
+        video, .video-stream, .html5-main-video {
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: cover !important; /* Screen poora bhar dega */
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+        }
+
+        /* Agresive Ad-blocking */
+        ytm-promoted-video-renderer, ytm-display-ad-renderer, .ad-container, .ad-div, ytm-companion-ad-renderer { 
             display: none !important; 
         }
     </style>
 </head>
 <body style="background: #000; margin: 0;">
     <script>
-        // Force Video Play in Background
+        // BRAVE TECHNIQUE: Background Media Session
+        const initMediaSession = () => {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'playing';
+                navigator.mediaSession.setActionHandler('pause', () => { document.querySelector('video').play(); });
+            }
+        };
+
+        // PRE-LOAD LOGIC: Shorts aur Subscriptions ko background mein khichna
+        window.preWarmYouTube = () => {
+            const sections = ['/shorts', '/feed/subscriptions', '/feed/library'];
+            sections.forEach(path => {
+                const link = document.createElement('link');
+                link.rel = 'prefetch';
+                link.href = path;
+                document.head.appendChild(link);
+            });
+        };
+
         setInterval(() => {
             const video = document.querySelector('video');
-            if (video && video.paused && !video.ended && document.hidden) {
-                video.play(); // Agar app piche jaye toh khud 'Play' dabao
+            if (video) {
+                // Background play loop
+                if (document.hidden && video.paused && !video.ended) {
+                    video.play();
+                }
+                initMediaSession();
+
+                // Auto-skip ads (Fast forward technique)
+                if (document.querySelector('.ad-showing')) {
+                    video.currentTime = video.duration;
+                }
             }
             
-            // Skip Ads
+            // Skip buttons click
             const skip = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');
             if(skip) skip.click();
         }, 1000);
 
-        // Fake Visibility for YouTube
+        // Visibility Bypass
         Object.defineProperty(document, 'visibilityState', {get: () => 'visible'});
         Object.defineProperty(document, 'hidden', {get: () => false});
     </script>
