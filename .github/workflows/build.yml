@@ -5,26 +5,28 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4  # v3 se v4 kar diya
 
       - name: set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4  # v3 se v4 kar diya
         with:
           java-version: '17'
           distribution: 'temurin'
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4  # v3 se v4 kar diya
         with:
           node-version: 18
 
       - name: Install Capacitor
         run: |
           npm install
-          npx cap add android
+          # Agar 'android' folder pehle se hai toh ye skip hoga, varna add karega
+          npx cap add android || true 
 
       - name: Inject Custom Manifest
         run: |
+          # Hamari permissions file ko asli android folder mein copy karna
           cp AndroidManifest.xml android/app/src/main/AndroidManifest.xml
 
       - name: Build Android Project
@@ -34,7 +36,7 @@ jobs:
           cd android && ./gradlew assembleDebug
 
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  # Asli error yahan tha, ab fixed hai
         with:
           name: YouTube-Pro-By-Ayush
           path: android/app/build/outputs/apk/debug/app-debug.apk
