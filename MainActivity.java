@@ -25,18 +25,19 @@ public class MainActivity extends BridgeActivity {
         WebView webView = this.bridge.getWebView();
         WebSettings s = webView.getSettings();
         
-        // Background & Performance settings
+        // Background & High Performance settings
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
-        s.setMediaPlaybackRequiresUserGesture(false); // Brave Style 1
+        s.setMediaPlaybackRequiresUserGesture(false); 
         s.setDatabaseEnabled(true);
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
         webView.setWebViewClient(new WebViewClient() {
-            // BRAVE STYLE 2: Network Ad-Blocker
+            // BRAVE STYLE: Network level ad blocking
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                if (url.contains("googleads") || url.contains("doubleclick") || url.contains("adservice")) {
+                if (url.contains("googleads") || url.contains("doubleclick") || url.contains("adservice") || url.contains("gen_204")) {
                     return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
                 }
                 return super.shouldInterceptRequest(view, request);
@@ -45,7 +46,7 @@ public class MainActivity extends BridgeActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                // Pre-loading logic trigger
+                // Pre-loading trigger
                 view.evaluateJavascript("javascript:preWarmYouTube();", null);
             }
 
@@ -61,11 +62,9 @@ public class MainActivity extends BridgeActivity {
             public void onShowCustomView(View view, CustomViewCallback callback) {
                 customView = view;
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                // Video ke waqt screen light ON rakho
                 getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
                 
                 FrameLayout decor = (FrameLayout) getWindow().getDecorView();
-                // Ekdum zero gap fullscreen
                 decor.addView(customView, new FrameLayout.LayoutParams(-1, -1));
                 webView.setVisibility(View.GONE);
             }
@@ -96,9 +95,10 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onPause() {
-        // WebView timers ko resume rakho background play ke liye
-        this.bridge.getWebView().resumeTimers();
+    public void onPause() { // FIXED: Was protected, now public
         super.onPause();
+        if (this.bridge != null && this.bridge.getWebView() != null) {
+            this.bridge.getWebView().resumeTimers();
+        }
     }
 }
