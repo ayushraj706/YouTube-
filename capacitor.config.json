@@ -1,0 +1,10 @@
+{
+  "appId": "com.ayush.ytpro",
+  "appName": "YouTube Pro",
+  "webDir": "www",
+  "server": {
+    "url": "https://m.youtube.com",
+    "allowNavigation": ["m.youtube.com", "accounts.google.com"]
+  }
+}
+
