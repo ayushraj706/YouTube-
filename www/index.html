@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Pro Shell</title>
+</head>
+<body style="margin:0; padding:0; background: #000;">
+    <script>
+        // Adblocker aur Background Play logic
+        setInterval(() => {
+            // Ads hatane ke liye
+            const ads = document.querySelectorAll('.ad-container, .ad-div, .video-ads, .ytp-ad-module, .ytp-ad-overlay-container');
+            ads.forEach(ad => ad.remove());
+            
+            // Skip button click karne ke liye
+            const skipBtn = document.querySelector('.ytp-ad-skip-button-modern, .ytp-ad-skip-button');
+            if(skipBtn) skipBtn.click();
+        }, 1000);
+
+        // Background playback allow karne ke liye logic
+        Object.defineProperty(document, 'visibilityState', {get: function(){ return 'visible'; }});
+        Object.defineProperty(document, 'hidden', {get: function(){ return false; }});
+    </script>
+</body>
+</html>
+
