@@ -1,43 +1,29 @@
 name: Build YouTube APK
 on: [push, workflow_dispatch]
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4  # v3 se v4 kar diya
-
-      - name: set up JDK 17
-        uses: actions/setup-java@v4  # v3 se v4 kar diya
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4  # v3 se v4 kar diya
+      - uses: actions/setup-node@v4
         with:
-          node-version: 18
-
-      - name: Install Capacitor
+          node-version: 20
+      - name: Build Process
         run: |
           npm install
-          # Agar 'android' folder pehle se hai toh ye skip hoga, varna add karega
-          npx cap add android || true 
-
-      - name: Inject Custom Manifest
-        run: |
-          # Hamari permissions file ko asli android folder mein copy karna
+          npx cap add android || true
+          mkdir -p android/app/src/main/java/com/ayush/ytpro/
+          cp MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
           cp AndroidManifest.xml android/app/src/main/AndroidManifest.xml
-
-      - name: Build Android Project
-        run: |
-          npx cap copy
-          npx cap sync
+          npx cap copy && npx cap sync
           cd android && ./gradlew assembleDebug
-
       - name: Upload APK
-        uses: actions/upload-artifact@v4  # Asli error yahan tha, ab fixed hai
+        uses: actions/upload-artifact@v4
         with:
-          name: YouTube-Pro-By-Ayush
+          name: YouTube-Pro-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
           
