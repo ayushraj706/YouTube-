@@ -1,61 +1,28 @@
-name: Build YouTube APK
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Build Process (Deep Clean)
+      - name: Build Process (Final Force)
         run: |
           npm install
           npx cap add android || true
-          
-          # 1. PEHLE SYNC KARO
           npx cap sync
           
-          # 2. SAKT CLEANUP: Purani MainActivity ko dhoond kar delete karo
-          # Taki hamari custom file duplicate na ho
-          find android/app/src/main/java -name "MainActivity.java" -delete
-          
-          # 3. DIRECTORY CREATE & INJECTION
+          # 1. Purani default files ko jadd se mitao
+          rm -rf android/app/src/main/java/com/ayush/ytpro
           mkdir -p android/app/src/main/java/com/ayush/ytpro/
+          
+          # 2. Files Inject Karo (Forcefully)
           cp -f MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
           cp -f AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           
-          # 4. RESOURCE OVERWRITE (Logo aur Splash)
+          # 3. Resources Sync (Logo aur Splash)
           if [ -d "res" ]; then
-            echo "Resources found, injecting into Android project..."
             cp -rf res/* android/app/src/main/res/
           fi
           
-          # 5. VERIFICATION: Check karo file sahi jagah hai ya nahi
-          ls -R android/app/src/main/java/com/ayush/ytpro/
+          # 4. DEBUG CHECK: Ye dikhayega ki file wahan hai ya nahi
+          echo "Checking if MainActivity exists in destination..."
+          ls -l android/app/src/main/java/com/ayush/ytpro/MainActivity.java
           
-          # 6. GRADLE BUILD (Full Info mode)
+          # 5. Final Gradle Build
           cd android
           chmod +x gradlew
-          ./gradlew clean assembleDebug --stacktrace --info
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: YouTube-Pro-Ultimate
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          ./gradlew assembleDebug --stacktrace
           
