@@ -13,44 +13,35 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          # Cache hata diya hai taaki 'File Not Found' error na aaye
+          # Cache hata diya hai taaki build safely chale
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Build Process (Sakt Logic)
+      - name: Build Process (Hardcoded Final Order)
         run: |
-          # 1. Dependencies install karo
+          # 1. Dependencies aur Platform setup
           npm install
-          
-          # 2. Android platform add karo
           npx cap add android || true
           
-          # 3. Directories create karo (Java aur Resources ke liye)
-          mkdir -p android/app/src/main/java/com/ayush/ytpro/
-          mkdir -p android/app/src/main/res/drawable/
-          mkdir -p android/app/src/main/res/values/
-          mkdir -p android/app/src/main/res/mipmap-hdpi/
-          
-          # 4. CODE INJECTION: MainActivity aur Manifest copy karo
-          cp MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
-          cp AndroidManifest.xml android/app/src/main/AndroidManifest.xml
-          
-          # 5. LOGO & RES SYNC: res folder check
-          if [ -d "res" ]; then
-            echo "Resources found! Syncing logo and splash..."
-            cp -r res/* android/app/src/main/res/
-          else
-            echo "WARNING: 'res' folder nahi mila. Default icon use hoga."
-          fi
-          
-          # 6. Capacitor Sync (Web files ko Android mein bhejo)
+          # 2. Capacitor Sync pehle karo (Taki ye default files generate kar le)
           npx cap copy
           npx cap sync
           
-          # 7. GRADLE BUILD: APK banao
+          # 3. AB APNI FILES INJECT KARO (Taki Capacitor ise overwrite na kar paye)
+          mkdir -p android/app/src/main/java/com/ayush/ytpro/
+          cp MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
+          cp AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+          
+          # 4. Logo aur Resources ko final touch do
+          if [ -d "res" ]; then
+            echo "Logo folder mil gaya! Copying resources..."
+            cp -r res/* android/app/src/main/res/
+          fi
+          
+          # 5. GRADLE BUILD: Permissions set karke APK banao
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
@@ -58,6 +49,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: YouTube-Pro-Final
+          name: YouTube-Pro-Ultimate
           path: android/app/build/outputs/apk/debug/app-debug.apk
           
