@@ -5,115 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>YouTube Pro Ultimate</title>
     <style>
-        /* 1. AGGRESSIVE UI CLEANUP */
-        /* YouTube Premium banners, App install prompts aur Ads ko jadd se khatam karo */
+        /* 1. AGGRESSIVE CLEANUP - Ads, Banners, aur Prompts ko khatam karo */
         ytm-promoted-video-renderer, ytm-display-ad-renderer, ytm-ad-slot, 
         .ad-container, .ad-div, ytm-companion-ad-renderer,
         ytm-promoted-sparkles-web-renderer, ytm-statement-banner-renderer,
         .ytp-ad-overlay-container, ytm-upsell-dialog-renderer, 
-        #player-ads, .ytd-ad-slot-renderer, .yt-pivots-upsell-renderer { 
+        #player-ads, .ytd-ad-slot-renderer, .yt-pivots-upsell-renderer,
+        ytm-mealbar-promo-renderer, .ytm-app-install-banner { 
             display: none !important; 
             visibility: hidden !important;
             height: 0 !important;
-            width: 0 !important;
-            pointer-events: none !important;
         }
 
-        /* Full Screen Zoom Fix */
-        .custom-full-view video {
-            width: 100vw !important;
-            height: 100vh !important;
+        /* 2. SMART FULL-SCREEN FIX */
+        video {
+            object-fit: contain !important; /* Standard view */
+        }
+        
+        /* Jab aapko poori screen bharni ho (Zoom mode) */
+        .zoom-mode video {
             object-fit: cover !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            z-index: 2147483647 !important;
-            background: #000 !important;
         }
 
-        body { background: #000; margin: 0; padding: 0; }
+        body { background: #000; margin: 0; padding: 0; overflow: hidden; }
     </style>
 </head>
 <body>
     <script>
         (function() {
-            // --- STRATEGY 1: NETWORK INTERCEPTOR (BLOCK ADS BEFORE LOADING) ---
-            // Ye code YouTube ke ad-request mangne se pehle hi use block kar dega
+            // --- STRATEGY 1: AD-BLOCKER (NETWORK LEVEL) ---
+            const blockList = ['/ad_break', '/get_midroll_info', 'googleads', 'doubleclick', 'pagead'];
             const originalFetch = window.fetch;
             window.fetch = function() {
                 const url = arguments[0];
-                if (typeof url === 'string' && (url.includes('/ad_break') || url.includes('/get_midroll_info') || url.includes('googleads'))) {
+                if (typeof url === 'string' && blockList.some(ad => url.includes(ad))) {
                     return Promise.resolve(new Response(null, { status: 204 }));
                 }
                 return originalFetch.apply(this, arguments);
             };
 
-            const originalOpen = XMLHttpRequest.prototype.open;
-            XMLHttpRequest.prototype.open = function() {
-                const url = arguments[1];
-                if (typeof url === 'string' && (url.includes('/ad_break') || url.includes('/get_midroll_info') || url.includes('googleads'))) {
-                    return; // Request hi mat bhejo
-                }
-                originalOpen.apply(this, arguments);
+            // --- STRATEGY 2: BACKGROUND PLAY REINFORCED ---
+            // Visibility API ko hamesha 'visible' par lock kar do
+            const lockVisible = () => {
+                Object.defineProperty(document, 'visibilityState', { get: () => 'visible', configurable: true });
+                Object.defineProperty(document, 'hidden', { get: () => false, configurable: true });
             };
+            lockVisible();
 
-            // --- STRATEGY 2: VISIBILITY FREEZE (BACKGROUND PLAYBACK) ---
-            // YouTube ko hamesha lagega ki app "Front" par chal rahi hai
-            Object.defineProperty(document, 'visibilityState', { get: () => 'visible', configurable: true });
-            Object.defineProperty(document, 'hidden', { get: () => false, configurable: true });
+            // YouTube ki pause karne wali events ko block karo
+            const preventPause = (e) => {
+                if (e.type === 'visibilitychange' || e.type === 'blur' || e.type === 'focusout') {
+                    e.stopImmediatePropagation();
+                }
+            };
+            window.addEventListener('visibilitychange', preventPause, true);
+            window.addEventListener('blur', preventPause, true);
 
-            // YouTube ke "VisibilityChange" listener ko deactivate karna
-            window.addEventListener('visibilitychange', (e) => e.stopImmediatePropagation(), true);
-            window.addEventListener('webkitvisibilitychange', (e) => e.stopImmediatePropagation(), true);
-            window.addEventListener('blur', (e) => e.stopImmediatePropagation(), true);
-
-            // --- STRATEGY 3: AGGRESSIVE AD SKIPPER & AUTO-PLAY ---
-            const hardController = () => {
+            // --- STRATEGY 3: HARD CONTROLLER LOOP ---
+            setInterval(() => {
                 const video = document.querySelector('video');
                 if (!video) return;
 
-                // Media Session Setup (Notification bar controls)
+                // 1. Background Auto-Play (Screen lock hone par bhi chalega)
+                if (video.paused && !video.ended) {
+                    video.play().catch(() => {});
+                }
+
+                // 2. Ad-Skipper Logic (Speed up and skip)
+                if (document.querySelector('.ad-showing, .ad-interrupting')) {
+                    video.muted = true;
+                    video.playbackRate = 16.0;
+                    if (video.duration > 0) video.currentTime = video.duration - 0.1;
+                    
+                    const skipBtn = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');
+                    if (skipBtn) skipBtn.click();
+                }
+
+                // 3. Media Session Metadata Update
                 if ('mediaSession' in navigator) {
                     navigator.mediaSession.metadata = new MediaMetadata({
                         title: 'YouTube Pro',
                         artist: 'Ayush Raj',
-                        album: 'Ultimate Edition'
+                        artwork: [{ src: 'favicon.ico', sizes: '96x96', type: 'image/png' }]
                     });
-                    navigator.mediaSession.setActionHandler('play', () => video.play());
-                    navigator.mediaSession.setActionHandler('pause', () => video.play()); // Pause na ho paye
                 }
+            }, 300);
 
-                // Agar ad dikh rahi hai
-                if (document.querySelector('.ad-showing, .ad-interrupting')) {
-                    video.muted = true; // Ad ko silent karo
-                    video.playbackRate = 16.0; // 16x speed (Fastest)
-                    
-                    // Skip button detect karke turant click karna
-                    const skipBtn = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');
-                    if (skipBtn) skipBtn.click();
-                    
-                    // Video ko ad ke end tak jump karao
-                    if (video.duration > 0) {
-                        video.currentTime = video.duration - 0.1;
-                    }
-                } else {
-                    if (video.playbackRate > 1.0) video.playbackRate = 1.0; // Normal speed wapas lao
-                }
-
-                // Background auto-play guard
-                if (video.paused && !video.ended) {
-                    video.play().catch(() => {});
-                }
-            };
-
-            // Har 200ms par check karo (Dheere check karne se YouTube pakad leta hai)
-            setInterval(hardController, 200);
-
-            // --- STRATEGY 4: PREVENT PREMIUM POPUPS ---
+            // --- STRATEGY 4: AUTO-DISMISS POPUPS ---
             setInterval(() => {
-                const dismissButtons = document.querySelectorAll('ytm-upsell-dialog-renderer #dismiss-button, .yt-spec-button-shape-next--tertiary');
-                dismissButtons.forEach(btn => btn.click());
-            }, 1000);
+                const closeBtns = document.querySelectorAll('.yt-spec-button-shape-next--tertiary, #dismiss-button');
+                closeBtns.forEach(btn => btn.click());
+            }, 2000);
 
         })();
     </script>
