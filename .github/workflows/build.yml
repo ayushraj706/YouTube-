@@ -22,33 +22,43 @@ jobs:
         with:
           node-version: 20
 
-      - name: Build Process (Final Force)
+      - name: Build Process (Extreme Force)
         run: |
-          # 1. Dependencies aur Platform setup
+          # 1. Basic Setup
           npm install
           npx cap add android || true
+          
+          # 2. Capacitor Sync (Taki basic structure ban jaye)
           npx cap sync
           
-          # 2. SAKT CLEANUP: Capacitor ki default MainActivity ko delete karo
+          # 3. SAKT CLEANUP: Capacitor ke purane icons aur MainActivity mitao
+          # Ye line zaroori hai taki default logo aapke logo ko na roke
+          rm -rf android/app/src/main/res/mipmap-*
+          rm -rf android/app/src/main/res/drawable/ic_launcher_background.xml
+          rm -rf android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml
           find android/app/src/main/java -name "MainActivity.java" -delete
           
-          # 3. DIRECTORY INJECTION: Sahi folder structure banao
+          # 4. DIRECTORY INJECTION: Apne package ki sahi jagah banao
           mkdir -p android/app/src/main/java/com/ayush/ytpro/
           
-          # 4. FILE COPY: Custom files ko inject karo
+          # 5. FILE INJECTION: Custom files ko inject karo
           cp -f MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
           cp -f AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           
-          # 5. RESOURCE SYNC: Logo aur Splash inject karo
+          # 6. RESOURCE SYNC: Logo aur Splash ko merge karo
           if [ -d "res" ]; then
-            echo "Resources mil gaye! Copying..."
+            echo "Logo folder mil gaya! Copying resources..."
             cp -rf res/* android/app/src/main/res/
           fi
           
-          # 6. GRADLE BUILD: Final APK banao
+          # 7. DEBUG LOGS: Check karo file sahi jagah pahunchi ya nahi
+          echo "--- VERIFYING FILES ---"
+          ls -R android/app/src/main/java/com/ayush/ytpro/
+          
+          # 8. FINAL GRADLE BUILD
           cd android
           chmod +x gradlew
-          ./gradlew clean assembleDebug --stacktrace
+          ./gradlew clean assembleDebug --stacktrace --info
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
