@@ -7,20 +7,21 @@
     "hostname": "localhost",
     "allowNavigation": [
       "m.youtube.com",
-      "*.google.com",
+      "www.youtube.com",
       "*.youtube.com",
+      "*.google.com",
       "accounts.google.com",
       "*.googlevideo.com",
-      "*.ytimg.com"
+      "*.ytimg.com",
+      "*.gstatic.com",
+      "*.ggpht.com"
     ]
   },
   "android": {
     "allowMixedContent": true,
     "captureInput": true,
     "backgroundColor": "#000000",
-    "buildOptions": {
-      "releaseType": "debug"
-    }
+    "webContentsDebuggingEnabled": true
   },
   "plugins": {
     "StatusBar": {
