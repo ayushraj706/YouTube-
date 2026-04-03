@@ -2,112 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Pro Ultimate</title>
     <style>
-        /* 1. AGGRESSIVE UI CLEANUP */
-        ytm-promoted-video-renderer, ytm-display-ad-renderer, ytm-ad-slot, 
-        .ad-container, .ad-div, ytm-companion-ad-renderer,
-        ytm-promoted-sparkles-web-renderer, ytm-statement-banner-renderer,
-        .ytp-ad-overlay-container, ytm-upsell-dialog-renderer, 
-        #player-ads, .ytd-ad-slot-renderer, .yt-pivots-upsell-renderer,
-        ytm-mealbar-promo-renderer, .ytm-app-install-banner,
-        .ytp-paid-content-overlay { 
-            display: none !important; 
-            visibility: hidden !important;
-            height: 0 !important;
+        /* Jab tak redirect ho, tab tak screen kaali rahe taaki jhatka na lage */
+        body { 
+            background-color: #000; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
         }
-
-        body { background: #000; margin: 0; padding: 0; overflow: hidden; }
-        
-        /* Video Zoom Fix */
-        video { object-fit: cover !important; }
     </style>
 </head>
 <body>
     <script>
-        (function() {
-            // --- STEP 0: THE BRAIN (Redirect to YouTube) ---
-            // Agar hum abhi YouTube par nahi hain, toh wahan jao
-            if (window.location.hostname !== 'm.youtube.com') {
-                window.location.replace('https://m.youtube.com');
-                return;
-            }
-
-            // --- STRATEGY 1: NETWORK INTERCEPTOR (Fetch + XHR) ---
-            const adKeywords = ['/ad_break', '/get_midroll_info', 'googleads', 'doubleclick', 'pagead', 'gen_204'];
-            
-            // Fetch Block
-            const originalFetch = window.fetch;
-            window.fetch = function() {
-                const url = arguments[0];
-                if (typeof url === 'string' && adKeywords.some(ad => url.includes(ad))) {
-                    return Promise.resolve(new Response(null, { status: 204 }));
-                }
-                return originalFetch.apply(this, arguments);
-            };
-
-            // XHR Block (YouTube use this a lot)
-            const originalOpen = XMLHttpRequest.prototype.open;
-            XMLHttpRequest.prototype.open = function() {
-                const url = arguments[1];
-                if (typeof url === 'string' && adKeywords.some(ad => url.includes(ad))) {
-                    return; 
-                }
-                originalOpen.apply(this, arguments);
-            };
-
-            // --- STRATEGY 2: VISIBILITY & BACKGROUND HACK ---
-            const freezeVisibility = () => {
-                Object.defineProperty(document, 'visibilityState', { get: () => 'visible', configurable: true });
-                Object.defineProperty(document, 'hidden', { get: () => false, configurable: true });
-            };
-            freezeVisibility();
-
-            const preventPause = (e) => {
-                if (['visibilitychange', 'blur', 'focusout'].includes(e.type)) {
-                    e.stopImmediatePropagation();
-                }
-            };
-            window.addEventListener('visibilitychange', preventPause, true);
-            window.addEventListener('blur', preventPause, true);
-
-            // --- STRATEGY 3: HARD CONTROLLER LOOP ---
-            setInterval(() => {
-                const video = document.querySelector('video');
-                if (!video) return;
-
-                // 1. Force Background Play
-                if (video.paused && !video.ended && !video.seeking) {
-                    video.play().catch(() => {});
-                }
-
-                // 2. Ultra Ad-Skipper
-                if (document.querySelector('.ad-showing, .ad-interrupting')) {
-                    video.muted = true;
-                    video.playbackRate = 16.0;
-                    if (video.duration > 0) video.currentTime = video.duration - 0.1;
-                    
-                    const skipBtn = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');
-                    if (skipBtn) skipBtn.click();
-                }
-
-                // 3. Media Notification Setup
-                if ('mediaSession' in navigator) {
-                    navigator.mediaSession.playbackState = "playing";
-                    navigator.mediaSession.metadata = new MediaMetadata({
-                        title: 'YouTube Pro',
-                        artist: 'Ayush Raj'
-                    });
-                }
-            }, 350);
-
-            // 4. Auto-Dismiss Popups
-            setInterval(() => {
-                document.querySelectorAll('.yt-spec-button-shape-next--tertiary, #dismiss-button').forEach(b => b.click());
-            }, 1500);
-
-        })();
+        // Bina kisi nakhre ke sidha YouTube par jump karo
+        // replace() use karne se 'Back' dabane par app band nahi hogi, pichle page par jayegi
+        window.location.replace("https://m.youtube.com");
     </script>
 </body>
 </html>
