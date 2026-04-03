@@ -1,45 +1,58 @@
-      - name: Build Process (Ultra Force & Verify)
+name: Build YouTube APK
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build Process (Final Force)
         run: |
-          # 1. Install Dependencies
+          # 1. Dependencies aur Platform setup
           npm install
-          
-          # 2. Add Android Platform (agar nahi hai)
           npx cap add android || true
-          
-          # 3. Capacitor Sync (Taki basic folder structure ban jaye)
           npx cap sync
           
-          # 4. SAKT CLEANUP: Capacitor ki default files ko jadd se mitao
-          # Ye line kisi bhi purani MainActivity.java ko poore project se delete kar degi
+          # 2. SAKT CLEANUP: Capacitor ki default MainActivity ko delete karo
           find android/app/src/main/java -name "MainActivity.java" -delete
           
-          # 5. DIRECTORY INJECTION: Sahi Package Path banao
-          # Agar Package Name 'com.ayush.ytpro' hai, toh folder waisa hi hona chahiye
+          # 3. DIRECTORY INJECTION: Sahi folder structure banao
           mkdir -p android/app/src/main/java/com/ayush/ytpro/
           
-          # 6. FILE COPY: Custom files ko force copy karo
+          # 4. FILE COPY: Custom files ko inject karo
           cp -f MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
           cp -f AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           
-          # 7. RESOURCE SYNC: Logo, Splash aur Styles
+          # 5. RESOURCE SYNC: Logo aur Splash inject karo
           if [ -d "res" ]; then
-            echo "Resources found! Injecting custom Logo and Splash..."
+            echo "Resources mil gaye! Copying..."
             cp -rf res/* android/app/src/main/res/
-          else
-            echo "WARNING: 'res' folder nahi mila. App default icon use karega."
           fi
           
-          # 8. DEBUG VERIFICATION: Check karo file sahi jagah pahunchi ya nahi
-          echo "--- VERIFYING FILE PATHS ---"
-          if [ -f "android/app/src/main/java/com/ayush/ytpro/MainActivity.java" ]; then
-            echo "SUCCESS: MainActivity.java is in the correct folder."
-          else
-            echo "ERROR: MainActivity.java is MISSING from destination!"
-            exit 1
-          fi
-          
-          # 9. FINAL GRADLE BUILD: Clean ke saath build karo
+          # 6. GRADLE BUILD: Final APK banao
           cd android
           chmod +x gradlew
-          ./gradlew clean assembleDebug --stacktrace --info
+          ./gradlew clean assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: YouTube-Pro-Ultimate
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           
