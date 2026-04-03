@@ -22,33 +22,40 @@ jobs:
         with:
           node-version: 20
 
-      - name: Build Process
+      - name: Build Process (Deep Clean)
         run: |
           npm install
           npx cap add android || true
           
-          # 1. Capacitor Sync (Pehle basic structure banne do)
+          # 1. PEHLE SYNC KARO
           npx cap sync
           
-          # 2. Files Inject Karo (App ID match honi chahiye)
-          mkdir -p android/app/src/main/java/com/ayush/ytpro/
-          cp MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
-          cp AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+          # 2. SAKT CLEANUP: Purani MainActivity ko dhoond kar delete karo
+          # Taki hamari custom file duplicate na ho
+          find android/app/src/main/java -name "MainActivity.java" -delete
           
-          # 3. Logo aur Resources copy karo
+          # 3. DIRECTORY CREATE & INJECTION
+          mkdir -p android/app/src/main/java/com/ayush/ytpro/
+          cp -f MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
+          cp -f AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+          
+          # 4. RESOURCE OVERWRITE (Logo aur Splash)
           if [ -d "res" ]; then
-            echo "Resources found, syncing..."
-            cp -r res/* android/app/src/main/res/
+            echo "Resources found, injecting into Android project..."
+            cp -rf res/* android/app/src/main/res/
           fi
           
-          # 4. Gradle Build
+          # 5. VERIFICATION: Check karo file sahi jagah hai ya nahi
+          ls -R android/app/src/main/java/com/ayush/ytpro/
+          
+          # 6. GRADLE BUILD (Full Info mode)
           cd android
           chmod +x gradlew
-          ./gradlew clean assembleDebug --stacktrace
+          ./gradlew clean assembleDebug --stacktrace --info
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: YouTube-Pro-App
+          name: YouTube-Pro-Ultimate
           path: android/app/build/outputs/apk/debug/app-debug.apk
           
