@@ -23,7 +23,6 @@ import java.util.List;
 public class MainActivity extends BridgeActivity {
 
     private View customView;
-    // Desktop Agent ensures YouTube doesn't block background play features
     private final String DESKTOP_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36";
 
     @Override
@@ -43,7 +42,6 @@ public class MainActivity extends BridgeActivity {
         s.setSupportMultipleWindows(false);
 
         webView.setWebViewClient(new WebViewClient() {
-            // Expanded Ad-Block List
             private final List<String> adDomains = Arrays.asList(
                 "googleads", "doubleclick", "adservice", "gen_204", 
                 "googlesyndication", "youtube.com/pagead", "google.com/pagead", 
@@ -55,7 +53,6 @@ public class MainActivity extends BridgeActivity {
                 String url = request.getUrl().toString();
                 for (String domain : adDomains) {
                     if (url.contains(domain)) {
-                        // Return empty response for ad requests
                         return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
                     }
                 }
@@ -65,7 +62,6 @@ public class MainActivity extends BridgeActivity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
-                // Injecting "Always Visible" hack multiple times to be sure
                 injectBackgroundHack(view);
             }
 
@@ -99,9 +95,7 @@ public class MainActivity extends BridgeActivity {
         });
     }
 
-    // --- STRATEGY: BACKGROUND PERSISTENCE ---
     private void injectBackgroundHack(WebView view) {
-        // Spoofing visibility API: YouTube thinks the app is always in front
         view.evaluateJavascript("javascript:Object.defineProperty(document, 'visibilityState', {get: () => 'visible'});", null);
         view.evaluateJavascript("javascript:Object.defineProperty(document, 'hidden', {get: () => false});", null);
         view.evaluateJavascript("javascript:window.dispatchEvent(new Event('visibilitychange'));", null);
@@ -110,7 +104,6 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onUserLeaveHint() {
         super.onUserLeaveHint();
-        // Trigger PiP only on Android Oreo and above
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Rational aspectRatio = new Rational(16, 9);
             PictureInPictureParams params = new PictureInPictureParams.Builder()
@@ -124,17 +117,19 @@ public class MainActivity extends BridgeActivity {
     public void onPause() {
         super.onPause();
         if (getBridge() != null && getBridge().getWebView() != null) {
-            // Keep the JS engine running for background music
             getBridge().getWebView().resumeTimers(); 
             injectBackgroundHack(getBridge().getWebView());
         }
     }
 
+    // --- FIXED: Changed 'protected' to 'public' to match BridgeActivity ---
     @Override
-    protected void onStop() {
+    public void onStop() {
         super.onStop();
         if (getBridge() != null && getBridge().getWebView() != null) {
+            // Screen band hone par bhi playback engine ko zinda rakhna
             getBridge().getWebView().resumeTimers();
+            injectBackgroundHack(getBridge().getWebView());
         }
     }
 
