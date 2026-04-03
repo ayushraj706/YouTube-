@@ -32,7 +32,7 @@ public class MainActivity extends BridgeActivity {
         WebView webView = getBridge().getWebView();
         WebSettings s = webView.getSettings();
         
-        // --- SAKT SETTINGS ---
+        // --- HARDCORE SETTINGS ---
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
@@ -62,13 +62,14 @@ public class MainActivity extends BridgeActivity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
-                injectBackgroundHack(view);
+                injectSaktLogic(view);
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                injectBackgroundHack(view);
+                // Page load hone ke baad code ko dubara "Sakt" karo
+                injectSaktLogic(view);
             }
         });
 
@@ -95,10 +96,21 @@ public class MainActivity extends BridgeActivity {
         });
     }
 
-    private void injectBackgroundHack(WebView view) {
-        view.evaluateJavascript("javascript:Object.defineProperty(document, 'visibilityState', {get: () => 'visible'});", null);
-        view.evaluateJavascript("javascript:Object.defineProperty(document, 'hidden', {get: () => false});", null);
-        view.evaluateJavascript("javascript:window.dispatchEvent(new Event('visibilitychange'));", null);
+    // --- THE MASTER ENGINE: Background Play + Ad-Skipper ---
+    private void injectSaktLogic(WebView view) {
+        // 1. Visibility state hack (Lock to visible)
+        view.evaluateJavascript("javascript:Object.defineProperty(document, 'visibilityState', {get: () => 'visible', configurable: true});", null);
+        view.evaluateJavascript("javascript:Object.defineProperty(document, 'hidden', {get: () => false, configurable: true});", null);
+        
+        // 2. Ad-Skipper Loop: Yeh ads ko dekhte hi skip karega
+        String jsLoop = "setInterval(() => {" +
+            "document.querySelectorAll('.ad-showing, .ad-interrupting, .ytp-ad-overlay-container').forEach(v => { v.style.display='none'; });" +
+            "const skipBtn = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');" +
+            "if(skipBtn) skipBtn.click();" +
+            "const video = document.querySelector('video');" +
+            "if(video && video.paused && !video.ended && !video.seeking) video.play();" +
+            "}, 1000);";
+        view.evaluateJavascript("javascript:" + jsLoop, null);
     }
 
     @Override
@@ -118,7 +130,7 @@ public class MainActivity extends BridgeActivity {
         super.onPause();
         if (getBridge() != null && getBridge().getWebView() != null) {
             getBridge().getWebView().resumeTimers(); 
-            injectBackgroundHack(getBridge().getWebView());
+            injectSaktLogic(getBridge().getWebView());
         }
     }
 
@@ -126,16 +138,16 @@ public class MainActivity extends BridgeActivity {
     public void onResume() {
         super.onResume();
         if (getBridge() != null && getBridge().getWebView() != null) {
-            injectBackgroundHack(getBridge().getWebView());
+            injectSaktLogic(getBridge().getWebView());
         }
     }
 
     @Override
-    public void onStop() {
+    public void onStop() { // Access modifier: public match BridgeActivity
         super.onStop();
         if (getBridge() != null && getBridge().getWebView() != null) {
             getBridge().getWebView().resumeTimers();
-            injectBackgroundHack(getBridge().getWebView());
+            injectSaktLogic(getBridge().getWebView());
         }
     }
 
