@@ -32,7 +32,7 @@ public class MainActivity extends BridgeActivity {
         WebView webView = getBridge().getWebView();
         WebSettings s = webView.getSettings();
         
-        // --- HARDCORE SETTINGS ---
+        // --- SAKT SETTINGS ---
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
@@ -122,12 +122,18 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    // --- FIXED: Changed 'protected' to 'public' to match BridgeActivity ---
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            injectBackgroundHack(getBridge().getWebView());
+        }
+    }
+
     @Override
     public void onStop() {
         super.onStop();
         if (getBridge() != null && getBridge().getWebView() != null) {
-            // Screen band hone par bhi playback engine ko zinda rakhna
             getBridge().getWebView().resumeTimers();
             injectBackgroundHack(getBridge().getWebView());
         }
