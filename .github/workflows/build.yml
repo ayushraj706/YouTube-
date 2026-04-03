@@ -1,54 +1,27 @@
-name: Build YouTube APK
-on: [push, workflow_dispatch]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          # Cache hata diya hai taaki build safely chale
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
       - name: Build Process (Hardcoded Final Order)
         run: |
-          # 1. Dependencies aur Platform setup
           npm install
           npx cap add android || true
           
-          # 2. Capacitor Sync pehle karo (Taki ye default files generate kar le)
-          npx cap copy
+          # 1. Pehle Sync karo
           npx cap sync
           
-          # 3. AB APNI FILES INJECT KARO (Taki Capacitor ise overwrite na kar paye)
+          # 2. PURANI FILES HATAO (Taki koi takrav na ho)
+          rm -rf android/app/src/main/java/com/ayush/ytpro/*
           mkdir -p android/app/src/main/java/com/ayush/ytpro/
+          
+          # 3. APNI FILES INJECT KARO
           cp MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
           cp AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           
-          # 4. Logo aur Resources ko final touch do
+          # 4. Logo aur Resources (Sabse zaroori)
+          # Hum poora res folder replace karenge taki koi default file error na de
           if [ -d "res" ]; then
-            echo "Logo folder mil gaya! Copying resources..."
             cp -r res/* android/app/src/main/res/
           fi
           
-          # 5. GRADLE BUILD: Permissions set karke APK banao
+          # 5. GRADLE BUILD
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
-          
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: YouTube-Pro-Ultimate
-          path: android/app/build/outputs/apk/debug/app-debug.apk
           
