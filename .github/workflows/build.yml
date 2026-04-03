@@ -1,28 +1,45 @@
-      - name: Build Process (Final Force)
+      - name: Build Process (Ultra Force & Verify)
         run: |
+          # 1. Install Dependencies
           npm install
+          
+          # 2. Add Android Platform (agar nahi hai)
           npx cap add android || true
+          
+          # 3. Capacitor Sync (Taki basic folder structure ban jaye)
           npx cap sync
           
-          # 1. Purani default files ko jadd se mitao
-          rm -rf android/app/src/main/java/com/ayush/ytpro
+          # 4. SAKT CLEANUP: Capacitor ki default files ko jadd se mitao
+          # Ye line kisi bhi purani MainActivity.java ko poore project se delete kar degi
+          find android/app/src/main/java -name "MainActivity.java" -delete
+          
+          # 5. DIRECTORY INJECTION: Sahi Package Path banao
+          # Agar Package Name 'com.ayush.ytpro' hai, toh folder waisa hi hona chahiye
           mkdir -p android/app/src/main/java/com/ayush/ytpro/
           
-          # 2. Files Inject Karo (Forcefully)
+          # 6. FILE COPY: Custom files ko force copy karo
           cp -f MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
           cp -f AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           
-          # 3. Resources Sync (Logo aur Splash)
+          # 7. RESOURCE SYNC: Logo, Splash aur Styles
           if [ -d "res" ]; then
+            echo "Resources found! Injecting custom Logo and Splash..."
             cp -rf res/* android/app/src/main/res/
+          else
+            echo "WARNING: 'res' folder nahi mila. App default icon use karega."
           fi
           
-          # 4. DEBUG CHECK: Ye dikhayega ki file wahan hai ya nahi
-          echo "Checking if MainActivity exists in destination..."
-          ls -l android/app/src/main/java/com/ayush/ytpro/MainActivity.java
+          # 8. DEBUG VERIFICATION: Check karo file sahi jagah pahunchi ya nahi
+          echo "--- VERIFYING FILE PATHS ---"
+          if [ -f "android/app/src/main/java/com/ayush/ytpro/MainActivity.java" ]; then
+            echo "SUCCESS: MainActivity.java is in the correct folder."
+          else
+            echo "ERROR: MainActivity.java is MISSING from destination!"
+            exit 1
+          fi
           
-          # 5. Final Gradle Build
+          # 9. FINAL GRADLE BUILD: Clean ke saath build karo
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew clean assembleDebug --stacktrace --info
           
