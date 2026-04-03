@@ -13,45 +13,44 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle'
+          # Cache hata diya hai taaki 'File Not Found' error na aaye
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
-      - name: Build Process (Hardcoded)
+      - name: Build Process (Sakt Logic)
         run: |
           # 1. Dependencies install karo
           npm install
           
-          # 2. Android platform add karo (agar folder nahi hai toh)
+          # 2. Android platform add karo
           npx cap add android || true
           
           # 3. Directories create karo (Java aur Resources ke liye)
           mkdir -p android/app/src/main/java/com/ayush/ytpro/
           mkdir -p android/app/src/main/res/drawable/
           mkdir -p android/app/src/main/res/values/
+          mkdir -p android/app/src/main/res/mipmap-hdpi/
           
           # 4. CODE INJECTION: MainActivity aur Manifest copy karo
           cp MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
           cp AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           
-          # 5. LOGO & SPLASH SYNC: res folder se resources copy karo
+          # 5. LOGO & RES SYNC: res folder check
           if [ -d "res" ]; then
-            echo "Logo folder mil gaya! Copying resources..."
+            echo "Resources found! Syncing logo and splash..."
             cp -r res/* android/app/src/main/res/
           else
-            echo "ERROR: 'res' folder nahi mila. GitHub par 'res' folder banao!"
-            exit 1
+            echo "WARNING: 'res' folder nahi mila. Default icon use hoga."
           fi
           
           # 6. Capacitor Sync (Web files ko Android mein bhejo)
           npx cap copy
           npx cap sync
           
-          # 7. GRADLE BUILD: Permissions set karke APK banao
+          # 7. GRADLE BUILD: APK banao
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
@@ -59,6 +58,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: YouTube-Pro-Ultimate
+          name: YouTube-Pro-Final
           path: android/app/build/outputs/apk/debug/app-debug.apk
           
