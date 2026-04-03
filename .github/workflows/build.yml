@@ -1,27 +1,54 @@
-      - name: Build Process (Hardcoded Final Order)
+name: Build YouTube APK
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build Process
         run: |
           npm install
           npx cap add android || true
           
-          # 1. Pehle Sync karo
+          # 1. Capacitor Sync (Pehle basic structure banne do)
           npx cap sync
           
-          # 2. PURANI FILES HATAO (Taki koi takrav na ho)
-          rm -rf android/app/src/main/java/com/ayush/ytpro/*
+          # 2. Files Inject Karo (App ID match honi chahiye)
           mkdir -p android/app/src/main/java/com/ayush/ytpro/
-          
-          # 3. APNI FILES INJECT KARO
           cp MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
           cp AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           
-          # 4. Logo aur Resources (Sabse zaroori)
-          # Hum poora res folder replace karenge taki koi default file error na de
+          # 3. Logo aur Resources copy karo
           if [ -d "res" ]; then
+            echo "Resources found, syncing..."
             cp -r res/* android/app/src/main/res/
           fi
           
-          # 5. GRADLE BUILD
+          # 4. Gradle Build
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew clean assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: YouTube-Pro-App
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           
