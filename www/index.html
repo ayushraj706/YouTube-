@@ -3,109 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>YouTube Pro Ultimate</title>
     <style>
-        /* 1. ULTRA FULL SCREEN CSS (CUSTOM) */
-        /* Video ko screen ke hisaab se stretch karne ya fit karne ka option */
+        /* 1. AGGRESSIVE UI CLEANUP */
+        /* YouTube Premium banners, App install prompts aur Ads ko jadd se khatam karo */
+        ytm-promoted-video-renderer, ytm-display-ad-renderer, ytm-ad-slot, 
+        .ad-container, .ad-div, ytm-companion-ad-renderer,
+        ytm-promoted-sparkles-web-renderer, ytm-statement-banner-renderer,
+        .ytp-ad-overlay-container, ytm-upsell-dialog-renderer, 
+        #player-ads, .ytd-ad-slot-renderer, .yt-pivots-upsell-renderer { 
+            display: none !important; 
+            visibility: hidden !important;
+            height: 0 !important;
+            width: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* Full Screen Zoom Fix */
         .custom-full-view video {
             width: 100vw !important;
             height: 100vh !important;
-            object-fit: cover !important; /* Ye video ko poora faila dega (Zoom style) */
+            object-fit: cover !important;
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
-            z-index: 99999 !important;
+            z-index: 2147483647 !important;
             background: #000 !important;
         }
 
-        /* 2. AGGRESSIVE AD-BLOCKING (Brave Style) */
-        /* Sponsored videos, Banners, aur Breaking News shelves ko gaayab karo */
-        ytm-promoted-video-renderer, 
-        ytm-display-ad-renderer, 
-        ytm-ad-slot, 
-        .ad-container, 
-        .ad-div, 
-        ytm-companion-ad-renderer,
-        ytm-promoted-sparkles-web-renderer,
-        ytm-statement-banner-renderer,
-        .ytp-ad-overlay-container { 
-            display: none !important; 
-            visibility: hidden !important;
-        }
-
-        /* 3. CLEAN UI */
-        /* फालतू के buttons हटाना ताकि App जैसा लगे */
-        .mobile-dot-menu, .topbar-icons {
-            /* display: none !important; */ /* Agar aapko search bar chahiye toh ise comment rehne dein */
-        }
+        body { background: #000; margin: 0; padding: 0; }
     </style>
 </head>
-<body style="background: #000; margin: 0; overflow-x: hidden;">
+<body>
     <script>
-        // --- BRAVE BACKGROUND TECHNIQUE ---
-        const setupMediaSession = () => {
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.playbackState = 'playing';
-                
-                // Notification bar mein controls dikhane ke liye
-                navigator.mediaSession.metadata = new MediaMetadata({
-                    title: 'YouTube Pro',
-                    artist: 'Ayush Raj',
-                    album: 'Background Play Active'
-                });
-
-                const playVideo = () => document.querySelector('video')?.play();
-                
-                navigator.mediaSession.setActionHandler('play', playVideo);
-                navigator.mediaSession.setActionHandler('pause', playVideo); // Pause karne par bhi play hoga
-            }
-        };
-
-        // --- PRE-LOAD / PRE-WARM LOGIC ---
-        window.preWarmYouTube = () => {
-            const paths = ['/', '/shorts', '/feed/subscriptions', '/feed/library'];
-            paths.forEach(path => {
-                const link = document.createElement('link');
-                link.rel = 'prefetch';
-                link.href = path;
-                document.head.appendChild(link);
-            });
-        };
-
-        // --- MAIN CONTROLLER (Ads, Background, Fullscreen) ---
-        setInterval(() => {
-            const video = document.querySelector('video');
-            
-            if (video) {
-                // Background play logic
-                if (document.hidden && video.paused && !video.ended) {
-                    video.play();
+        (function() {
+            // --- STRATEGY 1: NETWORK INTERCEPTOR (BLOCK ADS BEFORE LOADING) ---
+            // Ye code YouTube ke ad-request mangne se pehle hi use block kar dega
+            const originalFetch = window.fetch;
+            window.fetch = function() {
+                const url = arguments[0];
+                if (typeof url === 'string' && (url.includes('/ad_break') || url.includes('/get_midroll_info') || url.includes('googleads'))) {
+                    return Promise.resolve(new Response(null, { status: 204 }));
                 }
-                setupMediaSession();
+                return originalFetch.apply(this, arguments);
+            };
 
-                // Custom Full Screen Fix (Force Zoom)
-                // Agar aapko 'Zoom to Fill' chahiye toh niche wali line use karein
-                document.body.classList.add('custom-full-view');
+            const originalOpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function() {
+                const url = arguments[1];
+                if (typeof url === 'string' && (url.includes('/ad_break') || url.includes('/get_midroll_info') || url.includes('googleads'))) {
+                    return; // Request hi mat bhejo
+                }
+                originalOpen.apply(this, arguments);
+            };
 
-                // Ad skip logic (Brave Fast-Forward Technique)
-                if (document.querySelector('.ad-showing')) {
-                    video.currentTime = video.duration; // Ad khatam karo
-                    video.playbackRate = 16; // 16 guna fast chalao
+            // --- STRATEGY 2: VISIBILITY FREEZE (BACKGROUND PLAYBACK) ---
+            // YouTube ko hamesha lagega ki app "Front" par chal rahi hai
+            Object.defineProperty(document, 'visibilityState', { get: () => 'visible', configurable: true });
+            Object.defineProperty(document, 'hidden', { get: () => false, configurable: true });
+
+            // YouTube ke "VisibilityChange" listener ko deactivate karna
+            window.addEventListener('visibilitychange', (e) => e.stopImmediatePropagation(), true);
+            window.addEventListener('webkitvisibilitychange', (e) => e.stopImmediatePropagation(), true);
+            window.addEventListener('blur', (e) => e.stopImmediatePropagation(), true);
+
+            // --- STRATEGY 3: AGGRESSIVE AD SKIPPER & AUTO-PLAY ---
+            const hardController = () => {
+                const video = document.querySelector('video');
+                if (!video) return;
+
+                // Media Session Setup (Notification bar controls)
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: 'YouTube Pro',
+                        artist: 'Ayush Raj',
+                        album: 'Ultimate Edition'
+                    });
+                    navigator.mediaSession.setActionHandler('play', () => video.play());
+                    navigator.mediaSession.setActionHandler('pause', () => video.play()); // Pause na ho paye
+                }
+
+                // Agar ad dikh rahi hai
+                if (document.querySelector('.ad-showing, .ad-interrupting')) {
+                    video.muted = true; // Ad ko silent karo
+                    video.playbackRate = 16.0; // 16x speed (Fastest)
+                    
+                    // Skip button detect karke turant click karna
+                    const skipBtn = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');
+                    if (skipBtn) skipBtn.click();
+                    
+                    // Video ko ad ke end tak jump karao
+                    if (video.duration > 0) {
+                        video.currentTime = video.duration - 0.1;
+                    }
                 } else {
-                    video.playbackRate = 1; // Normal speed
+                    if (video.playbackRate > 1.0) video.playbackRate = 1.0; // Normal speed wapas lao
                 }
-            }
-            
-            // Skip buttons automatically click karo
-            const skipBtns = ['.ytp-ad-skip-button', '.ytp-ad-skip-button-modern', '.ytp-ad-overlay-close-button'];
-            skipBtns.forEach(s => document.querySelector(s)?.click());
 
-        }, 500); // Har aadhe second mein check karega
+                // Background auto-play guard
+                if (video.paused && !video.ended) {
+                    video.play().catch(() => {});
+                }
+            };
 
-        // Visibility Bypass (YouTube ko dhoka dena)
-        Object.defineProperty(document, 'visibilityState', {get: () => 'visible'});
-        Object.defineProperty(document, 'hidden', {get: () => false});
+            // Har 200ms par check karo (Dheere check karne se YouTube pakad leta hai)
+            setInterval(hardController, 200);
 
-        window.onload = window.preWarmYouTube;
+            // --- STRATEGY 4: PREVENT PREMIUM POPUPS ---
+            setInterval(() => {
+                const dismissButtons = document.querySelectorAll('ytm-upsell-dialog-renderer #dismiss-button, .yt-spec-button-shape-next--tertiary');
+                dismissButtons.forEach(btn => btn.click());
+            }, 1000);
+
+        })();
     </script>
 </body>
 </html>
