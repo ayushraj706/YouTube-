@@ -9,7 +9,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Java 17
-        uses: uses/actions/setup-java@v4
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -26,7 +26,7 @@ jobs:
           # 1. Dependencies install karo
           npm install
           
-          # 2. Android platform add karo (agar nahi hai toh)
+          # 2. Android platform add karo (agar folder nahi hai toh)
           npx cap add android || true
           
           # 3. Directories create karo (Java aur Resources ke liye)
@@ -34,16 +34,16 @@ jobs:
           mkdir -p android/app/src/main/res/drawable/
           mkdir -p android/app/src/main/res/values/
           
-          # 4. SAKT CODE INJECTION: MainActivity aur Manifest copy karo
+          # 4. CODE INJECTION: MainActivity aur Manifest copy karo
           cp MainActivity.java android/app/src/main/java/com/ayush/ytpro/MainActivity.java
           cp AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           
-          # 5. LOGO & SPLASH SYNC: Jo 'res' folder aapne banaya hai use copy karo
+          # 5. LOGO & SPLASH SYNC: res folder se resources copy karo
           if [ -d "res" ]; then
             echo "Logo folder mil gaya! Copying resources..."
             cp -r res/* android/app/src/main/res/
           else
-            echo "ERROR: 'res' folder nahi mila. Logo missing hoga!"
+            echo "ERROR: 'res' folder nahi mila. GitHub par 'res' folder banao!"
             exit 1
           fi
           
@@ -51,7 +51,7 @@ jobs:
           npx cap copy
           npx cap sync
           
-          # 7. GRADLE PERMISSION & BUILD: Sabse sakt part
+          # 7. GRADLE BUILD: Permissions set karke APK banao
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
