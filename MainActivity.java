@@ -41,6 +41,10 @@ public class MainActivity extends BridgeActivity {
         s.setUserAgentString(DESKTOP_USER_AGENT);
         s.setSupportMultipleWindows(false);
 
+        // --- BLACK SCREEN KA PERMANENT ILAJ ---
+        // Seedha YouTube load karo, local index.html ka intezar mat karo
+        webView.loadUrl("https://m.youtube.com");
+
         webView.setWebViewClient(new WebViewClient() {
             private final List<String> adDomains = Arrays.asList(
                 "googleads", "doubleclick", "adservice", "gen_204", 
@@ -68,7 +72,6 @@ public class MainActivity extends BridgeActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                // Page load hone ke baad code ko dubara "Sakt" karo
                 injectSaktLogic(view);
             }
         });
@@ -102,14 +105,14 @@ public class MainActivity extends BridgeActivity {
         view.evaluateJavascript("javascript:Object.defineProperty(document, 'visibilityState', {get: () => 'visible', configurable: true});", null);
         view.evaluateJavascript("javascript:Object.defineProperty(document, 'hidden', {get: () => false, configurable: true});", null);
         
-        // 2. Ad-Skipper Loop: Yeh ads ko dekhte hi skip karega
+        // 2. Ultra Ad-Skipper & Auto-Play Loop
         String jsLoop = "setInterval(() => {" +
-            "document.querySelectorAll('.ad-showing, .ad-interrupting, .ytp-ad-overlay-container').forEach(v => { v.style.display='none'; });" +
+            "document.querySelectorAll('.ad-showing, .ad-interrupting, ytm-promoted-video-renderer, .ytp-ad-overlay-container').forEach(v => { v.style.display='none'; });" +
             "const skipBtn = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');" +
             "if(skipBtn) skipBtn.click();" +
             "const video = document.querySelector('video');" +
             "if(video && video.paused && !video.ended && !video.seeking) video.play();" +
-            "}, 1000);";
+            "}, 800);"; // Thoda fast (800ms) check karega
         view.evaluateJavascript("javascript:" + jsLoop, null);
     }
 
@@ -143,7 +146,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    public void onStop() { // Access modifier: public match BridgeActivity
+    public void onStop() {
         super.onStop();
         if (getBridge() != null && getBridge().getWebView() != null) {
             getBridge().getWebView().resumeTimers();
